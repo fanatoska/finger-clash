@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Finger Clash Arena 💥</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Overlay for Player 2 (Top - Inverted for Player facing) -->
+    <div id="ui-p2" class="player-hud inverted">
+      <div class="player-info">
+        <span class="player-badge p2-badge">PLAYER 2</span>
+        <div class="score-dots" id="p2-score">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+      <div class="hint-text">Drag & Release to Dash ⚡</div>
+    </div>
+
+    <!-- Center Arena Divider Line & Announcer -->
+    <div id="arena-divider"></div>
+    <div id="round-announcer" class="round-announcer hidden">ROUND 1</div>
+
+    <!-- UI Overlay for Player 1 (Bottom) -->
+    <div id="ui-p1" class="player-hud">
+      <div class="hint-text">Drag & Release to Dash ⚡</div>
+      <div class="player-info">
+        <span class="player-badge p1-badge">PLAYER 1</span>
+        <div class="score-dots" id="p1-score">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Start & Match Over -->
+    <div id="modal-overlay" class="modal-overlay">
+      <div class="modal-card">
+        <div class="title-icon">💥</div>
+        <h1 class="title">FINGER CLASH</h1>
+        <p class="subtitle">1-Device 2-Player Sumo Arena</p>
+
+        <div id="winner-box" class="winner-box hidden">
+          <div id="winner-crown">👑</div>
+          <div id="winner-name">PLAYER 1 WINS!</div>
+        </div>
+
+        <div class="instructions">
+          <div class="rule-item">
+            <span class="rule-icon">🎯</span>
+            <span><b>Drag backwards & release</b> on your half to launch your bumper!</span>
+          </div>
+          <div class="rule-item">
+            <span class="rule-icon">🤼</span>
+            <span><b>Knock your rival</b> off the platform into the void!</span>
+          </div>
+          <div class="rule-item">
+            <span class="rule-icon">⭐</span>
+            <span>Grab <b>power-ups</b>: Bombs, Super Speed & Shields!</span>
+          </div>
+        </div>
+
+        <button id="start-btn" class="btn-primary">START BATTLE 🔥</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
