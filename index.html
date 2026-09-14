@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Finger Clash Arena 💥</title>
+  <title>Finger Clash - 2 Player Arcade Hub 💥</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <div id="game-container">
@@ -17,58 +17,172 @@
     <div id="ui-p2" class="player-hud inverted">
       <div class="player-info">
         <span class="player-badge p2-badge">PLAYER 2</span>
-        <div class="score-dots" id="p2-score">
-          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        </div>
+        <div class="score-dots" id="p2-score"></div>
       </div>
-      <div class="hint-text">Drag & Release to Dash ⚡</div>
+      <div class="hint-text" id="p2-hint">Приготовьтесь...</div>
     </div>
 
-    <!-- Center Arena Divider Line & Announcer -->
-    <div id="arena-divider"></div>
-    <div id="round-announcer" class="round-announcer hidden">ROUND 1</div>
+    <!-- Center Arena Divider Line & Hub Navigation Button -->
+    <div id="arena-divider">
+      <button id="menu-btn" class="center-menu-btn" title="Выйти в меню">
+        <span class="btn-icon">🏠</span>
+      </button>
+    </div>
+    
+    <div id="round-announcer" class="round-announcer hidden">РАУНД 1</div>
 
     <!-- UI Overlay for Player 1 (Bottom) -->
     <div id="ui-p1" class="player-hud">
-      <div class="hint-text">Drag & Release to Dash ⚡</div>
+      <div class="hint-text" id="p1-hint">Приготовьтесь...</div>
       <div class="player-info">
         <span class="player-badge p1-badge">PLAYER 1</span>
-        <div class="score-dots" id="p1-score">
-          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        </div>
+        <div class="score-dots" id="p1-score"></div>
       </div>
     </div>
 
-    <!-- Modal for Start & Match Over -->
-    <div id="modal-overlay" class="modal-overlay">
+    <!-- MAIN MENU OVERLAY -->
+    <div id="main-menu" class="menu-overlay">
+      <div class="menu-header">
+        <div class="hub-logo">
+          <span class="hub-icon">⚡</span>
+          <h1 class="hub-title">FINGER CLASH</h1>
+          <span class="hub-icon">⚡</span>
+        </div>
+        <p class="hub-subtitle">Битва на двоих на одном экране</p>
+      </div>
+
+      <!-- Match Settings -->
+      <div class="rounds-selector-box">
+        <span class="selector-label">Побед в матче:</span>
+        <div class="rounds-options">
+          <button class="round-chip" data-target="3">До 3</button>
+          <button class="round-chip active" data-target="5">До 5</button>
+          <button class="round-chip" data-target="7">До 7</button>
+        </div>
+      </div>
+
+      <!-- Game Cards Grid -->
+      <div class="games-grid">
+        <div class="game-card" data-game="soccer">
+          <div class="card-glow glow-green"></div>
+          <div class="card-emoji">⚽</div>
+          <div class="card-info">
+            <h3 class="card-title">Футбол на Двоих</h3>
+            <p class="card-desc">Аэро-футбол. Забивай голы рикошетом в чужие ворота!</p>
+          </div>
+          <span class="play-arrow">▶</span>
+        </div>
+
+        <div class="game-card" data-game="tanks">
+          <div class="card-glow glow-blue"></div>
+          <div class="card-emoji">🔫</div>
+          <div class="card-info">
+            <h3 class="card-title">Лазерные Танчики</h3>
+            <p class="card-desc">Укрытия, манёвры и рикошетящие лазерные выстрелы.</p>
+          </div>
+          <span class="play-arrow">▶</span>
+        </div>
+
+        <div class="game-card" data-game="tug">
+          <div class="card-glow glow-orange"></div>
+          <div class="card-emoji">🪓</div>
+          <div class="card-info">
+            <h3 class="card-title">Перетягивание Каната</h3>
+            <p class="card-desc">Яростный кликер! Тапай как сумасшедший и перетяни канат.</p>
+          </div>
+          <span class="play-arrow">▶</span>
+        </div>
+
+        <div class="game-card" data-game="pong">
+          <div class="card-glow glow-blue"></div>
+          <div class="card-emoji">🏓</div>
+          <div class="card-info">
+            <h3 class="card-title">Пинг-Понг</h3>
+            <p class="card-desc">Управляй ракеткой, подкручивай мяч и ускоряй темп.</p>
+          </div>
+          <span class="play-arrow">▶</span>
+        </div>
+
+        <div class="game-card" data-game="cowboy">
+          <div class="card-glow glow-amber"></div>
+          <div class="card-emoji">🤠</div>
+          <div class="card-info">
+            <h3 class="card-title">Ковбойская Дуэль</h3>
+            <p class="card-desc">Жди выстрела и хватайся за кобуру! Фальстарт = поражение.</p>
+          </div>
+          <span class="play-arrow">▶</span>
+        </div>
+
+        <div class="game-card" data-game="knife">
+          <div class="card-glow glow-green"></div>
+          <div class="card-emoji">🎯</div>
+          <div class="card-info">
+            <h3 class="card-title">Бросок Ножей</h3>
+            <p class="card-desc">Втыкай ножи во вращающуюся мишень и не задень чужие!</p>
+          </div>
+          <span class="play-arrow">▶</span>
+        </div>
+
+        <div class="game-card" data-game="snake">
+          <div class="card-glow glow-purple"></div>
+          <div class="card-emoji">🐍</div>
+          <div class="card-info">
+            <h3 class="card-title">Битва Змеек</h3>
+            <p class="card-desc">Оставляй длинный хвост и запирай соперника в угол!</p>
+          </div>
+          <span class="play-arrow">▶</span>
+        </div>
+
+        <div class="game-card" data-game="bomb">
+          <div class="card-glow glow-orange"></div>
+          <div class="card-emoji">💣</div>
+          <div class="card-info">
+            <h3 class="card-title">Горячая Бомба</h3>
+            <p class="card-desc">Бомба тикает! Отбивай её на сторону соперника до взрыва.</p>
+          </div>
+          <span class="play-arrow">▶</span>
+        </div>
+
+        <div class="game-card" data-game="tap">
+          <div class="card-glow glow-purple"></div>
+          <div class="card-emoji">⚡</div>
+          <div class="card-info">
+            <h3 class="card-title">Дуэль на Реакцию</h3>
+            <p class="card-desc">Жди зелёный сигнал и бей! Остерегайся фальстарта.</p>
+          </div>
+          <span class="play-arrow">▶</span>
+        </div>
+
+        <div class="game-card" data-game="dobble">
+          <div class="card-glow glow-amber"></div>
+          <div class="card-emoji">🃏</div>
+          <div class="card-info">
+            <h3 class="card-title">Найди Пару (Мемори)</h3>
+            <p class="card-desc">20 карточек, 10 пар. Переворачивай по очереди и собирай дубли!</p>
+          </div>
+          <span class="play-arrow">▶</span>
+        </div>
+      </div>
+
+      <div class="menu-footer">
+        <button id="random-game-btn" class="btn-random">🎲 Случайная игра</button>
+      </div>
+    </div>
+
+    <!-- Match Over Modal -->
+    <div id="match-over-modal" class="modal-overlay hidden">
       <div class="modal-card">
-        <div class="title-icon">💥</div>
-        <h1 class="title">FINGER CLASH</h1>
-        <p class="subtitle">1-Device 2-Player Sumo Arena</p>
+        <div class="title-icon">👑</div>
+        <h2 id="match-winner-name" class="title">PLAYER 1 WINS!</h2>
+        <p class="subtitle" id="match-score-summary">5 : 3</p>
 
-        <div id="winner-box" class="winner-box hidden">
-          <div id="winner-crown">👑</div>
-          <div id="winner-name">PLAYER 1 WINS!</div>
+        <div class="modal-buttons">
+          <button id="btn-play-again" class="btn-primary">ЕЩЁ РАЗ 🔄</button>
+          <button id="btn-back-to-menu" class="btn-secondary">В МЕНЮ 🏠</button>
         </div>
-
-        <div class="instructions">
-          <div class="rule-item">
-            <span class="rule-icon">🎯</span>
-            <span><b>Drag backwards & release</b> on your half to launch your bumper!</span>
-          </div>
-          <div class="rule-item">
-            <span class="rule-icon">🤼</span>
-            <span><b>Knock your rival</b> off the platform into the void!</span>
-          </div>
-          <div class="rule-item">
-            <span class="rule-icon">⭐</span>
-            <span>Grab <b>power-ups</b>: Bombs, Super Speed & Shields!</span>
-          </div>
-        </div>
-
-        <button id="start-btn" class="btn-primary">START BATTLE 🔥</button>
       </div>
     </div>
+
   </div>
 
   <script src="game.js"></script>
