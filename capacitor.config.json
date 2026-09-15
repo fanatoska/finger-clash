@@ -1,0 +1,10 @@
+{
+  "appId": "com.fanatoska.fingerclash",
+  "appName": "Finger Clash",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#181b24"
+  }
+}

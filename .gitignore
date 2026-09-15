@@ -1,4 +1,19 @@
-# Temp files
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+www/
+dist/
+*.apk
+*.aab
+
+# Capacitor Android generated
+android/
+.gradle/
+local.properties
+
+# Temp & OS files
 *.pyc
 __pycache__/
 create_*.py
