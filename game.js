@@ -31,19 +31,60 @@ class SoundController {
       this.ctx.resume();
     }
   }
+  vibrate(pattern = [12]) {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try { navigator.vibrate(pattern); } catch (e) {}
+    }
+  }
   playClick() {
+    this.vibrate([12]);
     if (!this.ctx) return;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(600, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.05);
-    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.05);
+    try {
+      const t = this.ctx.currentTime;
+      // High crisp snap
+      const osc1 = this.ctx.createOscillator();
+      const gain1 = this.ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(1400, t);
+      osc1.frequency.exponentialRampToValueAtTime(700, t + 0.04);
+      gain1.gain.setValueAtTime(0.2, t);
+      gain1.gain.linearRampToValueAtTime(0.001, t + 0.04);
+      osc1.connect(gain1);
+      gain1.connect(this.ctx.destination);
+      osc1.start(t);
+      osc1.stop(t + 0.04);
+
+      // Soft sub-body
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(320, t);
+      osc2.frequency.exponentialRampToValueAtTime(120, t + 0.05);
+      gain2.gain.setValueAtTime(0.25, t);
+      gain2.gain.linearRampToValueAtTime(0.001, t + 0.05);
+      osc2.connect(gain2);
+      gain2.connect(this.ctx.destination);
+      osc2.start(t);
+      osc2.stop(t + 0.05);
+    } catch (err) {}
+  }
+  playSelect() {
+    this.vibrate([14]);
+    if (!this.ctx) return;
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, t);
+      osc.frequency.exponentialRampToValueAtTime(1040, t + 0.06);
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.linearRampToValueAtTime(0.001, t + 0.06);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.06);
+    } catch (err) {}
   }
   playDash() {
     if (!this.ctx) return;
@@ -178,14 +219,20 @@ class SoundController {
 const sounds = new SoundController();
 
 // ==========================================================================
-// 🌟 VISUAL FX ENGINE (PARTICLES, SHAKES, SHOCKWAVES)
+// 🌟 VISUAL FX ENGINE (PARTICLES, SHAKES, SHOCKWAVES, CONFETTI & HIT-STOP)
 // ==========================================================================
 let particles = [];
 let shockwaves = [];
+let confetti = [];
 let screenShake = 0;
+let hitStopFrames = 0;
 
 function addScreenShake(amount) {
   screenShake = Math.max(screenShake, amount);
+}
+
+function triggerHitStop(frames = 6) {
+  hitStopFrames = frames;
 }
 
 function createShockwave(x, y, color = '#ffffff', maxRadius = 120) {
@@ -208,6 +255,72 @@ function createSparks(x, y, color = '#5eead4', count = 14, speed = 4.5) {
   }
 }
 
+function createConfetti(x, y, count = 45) {
+  const colors = ['#38bdf8', '#fda4af', '#facc15', '#4ade80', '#c084fc', '#f43f5e', '#ffffff'];
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = Math.random() * 8 + 3;
+    confetti.push({
+      x, y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd - 4,
+      w: Math.random() * 8 + 5,
+      h: Math.random() * 5 + 3,
+      rot: Math.random() * Math.PI * 2,
+      vrot: (Math.random() - 0.5) * 0.25,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: 1,
+      gravity: 0.16,
+      decay: Math.random() * 0.012 + 0.008
+    });
+  }
+}
+
+function drawArenaBackground() {
+  // Player 2 half (top, peach/coral ambient glow)
+  const gradTop = ctx.createRadialGradient(width / 2, height * 0.2, 20, width / 2, height * 0.2, height * 0.4);
+  gradTop.addColorStop(0, 'rgba(253, 164, 175, 0.06)');
+  gradTop.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = gradTop;
+  ctx.fillRect(0, 0, width, height / 2);
+
+  // Player 1 half (bottom, mint/cyan ambient glow)
+  const gradBottom = ctx.createRadialGradient(width / 2, height * 0.8, 20, width / 2, height * 0.8, height * 0.4);
+  gradBottom.addColorStop(0, 'rgba(56, 189, 248, 0.06)');
+  gradBottom.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = gradBottom;
+  ctx.fillRect(0, height / 2, width, height / 2);
+
+  // Corner neon accents
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.lineWidth = 2;
+  const bSize = 24;
+  // Top left
+  ctx.beginPath();
+  ctx.moveTo(14, 14 + bSize);
+  ctx.lineTo(14, 14);
+  ctx.lineTo(14 + bSize, 14);
+  ctx.stroke();
+  // Top right
+  ctx.beginPath();
+  ctx.moveTo(width - 14 - bSize, 14);
+  ctx.lineTo(width - 14, 14);
+  ctx.lineTo(width - 14, 14 + bSize);
+  ctx.stroke();
+  // Bottom left
+  ctx.beginPath();
+  ctx.moveTo(14, height - 14 - bSize);
+  ctx.lineTo(14, height - 14);
+  ctx.lineTo(14 + bSize, height - 14);
+  ctx.stroke();
+  // Bottom right
+  ctx.beginPath();
+  ctx.moveTo(width - 14 - bSize, height - 14);
+  ctx.lineTo(width - 14, height - 14);
+  ctx.lineTo(width - 14, height - 14 - bSize);
+  ctx.stroke();
+}
+
 function updateAndDrawEffects() {
   // Shockwaves
   for (let i = shockwaves.length - 1; i >= 0; i--) {
@@ -225,6 +338,28 @@ function updateAndDrawEffects() {
     ctx.globalAlpha = Math.max(0, sw.alpha);
     ctx.lineWidth = 4 * sw.alpha;
     ctx.stroke();
+    ctx.restore();
+  }
+
+  // Confetti
+  for (let i = confetti.length - 1; i >= 0; i--) {
+    const c = confetti[i];
+    c.x += c.vx;
+    c.y += c.vy;
+    c.vy += c.gravity;
+    c.vx *= 0.98;
+    c.rot += c.vrot;
+    c.alpha -= c.decay;
+    if (c.alpha <= 0 || c.y > height + 20) {
+      confetti.splice(i, 1);
+      continue;
+    }
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.rot);
+    ctx.globalAlpha = Math.max(0, c.alpha);
+    ctx.fillStyle = c.color;
+    ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
     ctx.restore();
   }
 
@@ -326,9 +461,13 @@ function startMatch(gameId) {
 function checkMatchOver() {
   if (p1Wins >= targetWins || p2Wins >= targetWins) {
     sounds.playWin();
+    sounds.vibrate([40, 60, 40, 100]);
+    createConfetti(width / 2, height / 2, 90);
+    createConfetti(width * 0.25, height * 0.35, 50);
+    createConfetti(width * 0.75, height * 0.65, 50);
     const winnerName = p1Wins >= targetWins ? 'PLAYER 1 ПОБЕДИЛ!' : 'PLAYER 2 ПОБЕДИЛ!';
     matchWinnerNameEl.innerText = winnerName;
-    matchWinnerNameEl.style.color = p1Wins >= targetWins ? '#00e5ff' : '#ff4b2b';
+    matchWinnerNameEl.style.color = p1Wins >= targetWins ? '#38bdf8' : '#fda4af';
     matchScoreSummaryEl.innerText = `${p1Wins} : ${p2Wins}`;
     matchModalEl.classList.remove('hidden');
     return true;
@@ -341,8 +480,11 @@ function onRoundWon(playerNum, title = '') {
   else if (playerNum === 2) p2Wins++;
 
   updateScoreHUD();
-  createShockwave(width / 2, height / 2, playerNum === 1 ? '#5eead4' : '#fda4af', 240);
-  addScreenShake(12);
+  createShockwave(width / 2, height / 2, playerNum === 1 ? '#38bdf8' : '#fda4af', 260);
+  createConfetti(width / 2, height / 2, 55);
+  addScreenShake(14);
+  triggerHitStop(7);
+  sounds.vibrate([30, 40, 50]);
 
   const roundName = title || (playerNum === 1 ? 'РАУНД: ИГРОК 1 🎯' : 'РАУНД: ИГРОК 2 🎯');
   announce(roundName, 1300);
@@ -362,7 +504,7 @@ menuBtnEl.addEventListener('click', () => {
 document.querySelectorAll('.round-chip').forEach(btn => {
   btn.addEventListener('click', (e) => {
     sounds.init();
-    sounds.playClick();
+    sounds.playSelect();
     document.querySelectorAll('.round-chip').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     targetWins = parseInt(btn.dataset.target, 10);
@@ -378,6 +520,9 @@ document.querySelectorAll('.game-card').forEach(card => {
 });
 
 randomGameBtn.addEventListener('click', () => {
+  sounds.init();
+  sounds.vibrate([25, 40, 35]);
+  sounds.playClick();
   const games = ['soccer', 'tanks', 'tug', 'pong', 'cowboy', 'knife', 'snake', 'bomb', 'tap', 'dobble'];
   const pick = games[Math.floor(Math.random() * games.length)];
   startMatch(pick);
@@ -401,23 +546,26 @@ class SoccerMiniGame {
     p2HintEl.innerText = 'Веди фишку и забивай в нижние ворота! ⚽';
 
     this.isRoundOver = false;
-    this.goalWidth = Math.min(width * 0.46, 220);
+    this.goalWidth = Math.min(width * 0.48, 230);
     this.initPitch();
     this.bindTouch();
     announce('МАТЧ НАЧАЛСЯ! ⚽', 1000);
   }
 
   initPitch() {
-    const pr = Math.min(width, height) * 0.056;
-    this.p1 = { x: width / 2, y: height * 0.8, vx: 0, vy: 0, radius: pr, color: '#5eead4', touchId: null };
+    const pr = Math.min(width, height) * 0.058;
+    this.p1 = { x: width / 2, y: height * 0.8, vx: 0, vy: 0, radius: pr, color: '#38bdf8', touchId: null };
     this.p2 = { x: width / 2, y: height * 0.2, vx: 0, vy: 0, radius: pr, color: '#fda4af', touchId: null };
     this.ball = {
       x: width / 2, y: height / 2,
       vx: (Math.random() - 0.5) * 4,
       vy: (Math.random() > 0.5 ? 1 : -1) * 5,
-      radius: Math.min(width, height) * 0.038,
+      radius: Math.min(width, height) * 0.04,
       color: '#f8fafc'
     };
+    this.trail = [];
+    this.squash = 1;
+    this.squashAngle = 0;
   }
 
   resetRound() {
@@ -492,8 +640,8 @@ class SoccerMiniGame {
       if (p.targetX !== undefined) {
         const dx = p.targetX - p.x;
         const dy = p.targetY - p.y;
-        p.vx = dx * 0.28;
-        p.vy = dy * 0.28;
+        p.vx = dx * 0.3;
+        p.vy = dy * 0.3;
         p.x += p.vx;
         p.y += p.vy;
       }
@@ -506,21 +654,33 @@ class SoccerMiniGame {
 
     // Ball physics
     const b = this.ball;
+    this.trail.unshift({ x: b.x, y: b.y });
+    if (this.trail.length > 8) this.trail.pop();
+
     b.x += b.vx;
     b.y += b.vy;
     b.vx *= 0.988;
     b.vy *= 0.988;
 
+    // Squash recovery
+    this.squash += (1 - this.squash) * 0.18;
+
     // Ball side walls
     if (b.x - b.radius < 10) {
       b.x = 10 + b.radius;
       b.vx = Math.abs(b.vx) * 0.95;
+      this.squash = 0.72;
+      this.squashAngle = 0;
       sounds.playRicochet();
+      sounds.vibrate([14]);
       createSparks(b.x, b.y, '#fff', 6, 4);
     } else if (b.x + b.radius > width - 10) {
       b.x = width - 10 - b.radius;
       b.vx = -Math.abs(b.vx) * 0.95;
+      this.squash = 0.72;
+      this.squashAngle = 0;
       sounds.playRicochet();
+      sounds.vibrate([14]);
       createSparks(b.x, b.y, '#fff', 6, 4);
     }
 
@@ -537,12 +697,16 @@ class SoccerMiniGame {
         b.x = p.x + nx * minDist;
         b.y = p.y + ny * minDist;
 
-        const impulse = 12 + Math.hypot(p.vx, p.vy) * 0.8;
+        const impulse = 12 + Math.hypot(p.vx, p.vy) * 0.85;
         b.vx = nx * impulse;
         b.vy = ny * impulse;
 
-        sounds.playHit(1.2);
-        createSparks(b.x, b.y, p.color, 12, 6);
+        this.squash = 0.65;
+        this.squashAngle = Math.atan2(ny, nx);
+
+        sounds.playHit(1.3);
+        sounds.vibrate([22]);
+        createSparks(b.x, b.y, p.color, 14, 6);
         addScreenShake(6);
       }
     });
@@ -556,11 +720,15 @@ class SoccerMiniGame {
       if (b.x >= goalLeft && b.x <= goalRight) {
         this.isRoundOver = true;
         sounds.playGoal();
-        createShockwave(b.x, b.y, '#00e5ff', 240);
+        sounds.vibrate([40, 60, 80]);
+        triggerHitStop(8);
+        createShockwave(b.x, b.y, '#38bdf8', 260);
         onRoundWon(1, 'ГОЛ! ИГРОК 1 ⚽🔥');
       } else {
         b.y = 10 + b.radius;
         b.vy = Math.abs(b.vy) * 0.9;
+        this.squash = 0.72;
+        this.squashAngle = Math.PI / 2;
         sounds.playRicochet();
       }
     }
@@ -570,11 +738,15 @@ class SoccerMiniGame {
       if (b.x >= goalLeft && b.x <= goalRight) {
         this.isRoundOver = true;
         sounds.playGoal();
-        createShockwave(b.x, b.y, '#ff4b2b', 240);
+        sounds.vibrate([40, 60, 80]);
+        triggerHitStop(8);
+        createShockwave(b.x, b.y, '#fda4af', 260);
         onRoundWon(2, 'ГОЛ! ИГРОК 2 ⚽🔥');
       } else {
         b.y = height - 10 - b.radius;
         b.vy = -Math.abs(b.vy) * 0.9;
+        this.squash = 0.72;
+        this.squashAngle = Math.PI / 2;
         sounds.playRicochet();
       }
     }
@@ -583,61 +755,129 @@ class SoccerMiniGame {
   draw() {
     // Pitch lines
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 2.5;
     ctx.strokeRect(10, 10, width - 20, height - 20);
 
-    // Center circle
+    // Center circle & center divider line
     ctx.beginPath();
     ctx.arc(width / 2, height / 2, Math.min(width, height) * 0.2, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Goals
+    // Goals with net pattern
     const gw = this.goalWidth;
     const gl = (width - gw) / 2;
     // Top goal (Peach side)
-    ctx.fillStyle = 'rgba(253, 164, 175, 0.2)';
-    ctx.fillRect(gl, 4, gw, 14);
+    ctx.fillStyle = 'rgba(253, 164, 175, 0.16)';
+    ctx.fillRect(gl, 4, gw, 16);
     ctx.strokeStyle = '#fda4af';
     ctx.lineWidth = 3;
-    ctx.strokeRect(gl, 4, gw, 14);
+    ctx.strokeRect(gl, 4, gw, 16);
 
-    // Bottom goal (Mint side)
-    ctx.fillStyle = 'rgba(94, 234, 212, 0.2)';
-    ctx.fillRect(gl, height - 18, gw, 14);
-    ctx.strokeStyle = '#5eead4';
+    // Bottom goal (Cyan side)
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
+    ctx.fillRect(gl, height - 20, gw, 16);
+    ctx.strokeStyle = '#38bdf8';
     ctx.lineWidth = 3;
-    ctx.strokeRect(gl, height - 18, gw, 14);
+    ctx.strokeRect(gl, height - 20, gw, 16);
     ctx.restore();
 
-    // Ball
+    // Ball speed trail
+    for (let i = 0; i < this.trail.length; i++) {
+      const t = this.trail[i];
+      const r = this.ball.radius * (1 - i / this.trail.length) * 0.75;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(56, 189, 248, ${(0.3 * (1 - i / this.trail.length)).toFixed(2)})`;
+      ctx.fill();
+    }
+
+    // Procedural 3D Soccer Ball with Squash & Stretch
     ctx.save();
+    ctx.translate(this.ball.x, this.ball.y);
+    // Dynamic floor shadow
     ctx.beginPath();
-    ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = '#00e5ff';
-    ctx.shadowBlur = 18;
+    ctx.ellipse(3, 4, this.ball.radius, this.ball.radius * 0.85, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
     ctx.fill();
 
-    ctx.font = `${Math.floor(this.ball.radius * 1.5)}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('⚽', this.ball.x, this.ball.y);
+    // Rotate and apply squash & stretch
+    ctx.rotate(this.squashAngle);
+    ctx.scale(1 / this.squash, this.squash);
+    ctx.rotate(-this.squashAngle);
+
+    // 3D spherical radial gradient
+    const grad = ctx.createRadialGradient(
+      -this.ball.radius * 0.3, -this.ball.radius * 0.3, this.ball.radius * 0.1,
+      0, 0, this.ball.radius
+    );
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.7, '#e2e8f0');
+    grad.addColorStop(1, '#94a3b8');
+
+    ctx.beginPath();
+    ctx.arc(0, 0, this.ball.radius, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.shadowColor = 'rgba(56, 189, 248, 0.35)';
+    ctx.shadowBlur = 12;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Classic pentagon patch on ball
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    const pr = this.ball.radius * 0.42;
+    for (let a = 0; a < 5; a++) {
+      const ang = (a * 72 - 18) * Math.PI / 180;
+      const px = Math.cos(ang) * pr;
+      const py = Math.sin(ang) * pr;
+      if (a === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Seam lines to edge
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 1.2;
+    for (let a = 0; a < 5; a++) {
+      const ang = (a * 72 - 18) * Math.PI / 180;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ang) * pr, Math.sin(ang) * pr);
+      ctx.lineTo(Math.cos(ang) * this.ball.radius * 0.88, Math.sin(ang) * this.ball.radius * 0.88);
+      ctx.stroke();
+    }
     ctx.restore();
 
-    // Players
+    // Arcade Air-Hockey Mallet Striker for Players
     [this.p1, this.p2].forEach(p => {
       ctx.save();
+      // Outer beveled ring with player glow
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
       ctx.fillStyle = p.color;
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = 20;
+      ctx.shadowBlur = 18;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Dark inner grip groove
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius * 0.78, 0, Math.PI * 2);
+      ctx.fillStyle = '#151924';
       ctx.fill();
 
+      // Raised center glossy dome handle
+      const hGrad = ctx.createRadialGradient(
+        p.x - p.radius * 0.15, p.y - p.radius * 0.15, p.radius * 0.05,
+        p.x, p.y, p.radius * 0.5
+      );
+      hGrad.addColorStop(0, '#ffffff');
+      hGrad.addColorStop(0.7, p.color);
+      hGrad.addColorStop(1, '#0f172a');
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius * 0.55, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
+      ctx.arc(p.x, p.y, p.radius * 0.5, 0, Math.PI * 2);
+      ctx.fillStyle = hGrad;
       ctx.fill();
       ctx.restore();
     });
@@ -771,10 +1011,10 @@ class TanksMiniGame {
   shoot(tank) {
     if (tank.reload > 0 || this.isRoundOver) return;
     tank.reload = 22; // cooldown frames
-    const barrelLen = tank.size * 0.7;
+    const barrelLen = tank.size * 0.75;
     const bx = tank.x + Math.cos(tank.angle) * barrelLen;
     const by = tank.y + Math.sin(tank.angle) * barrelLen;
-    const spd = 9;
+    const spd = 9.5;
 
     this.bullets.push({
       x: bx, y: by,
@@ -783,11 +1023,12 @@ class TanksMiniGame {
       bounces: 2,
       owner: tank,
       color: tank.color,
-      radius: 5
+      radius: 4.5
     });
 
     sounds.playLaser();
-    createSparks(bx, by, tank.color, 8, 4);
+    sounds.vibrate([18]);
+    createSparks(bx, by, tank.color, 12, 5);
   }
 
   update() {
@@ -800,21 +1041,22 @@ class TanksMiniGame {
         const dx = p.targetX - p.x;
         const dy = p.targetY - p.y;
         const dist = Math.hypot(dx, dy);
-        if (dist > 10) {
+        if (dist > 6) {
           const targetAngle = Math.atan2(dy, dx);
-          // Smooth rotation
           let diff = targetAngle - p.angle;
           while (diff < -Math.PI) diff += Math.PI * 2;
           while (diff > Math.PI) diff -= Math.PI * 2;
-          p.angle += diff * 0.18;
+          p.angle += diff * 0.22;
 
-          p.x += Math.cos(p.angle) * 3.8;
-          p.y += Math.sin(p.angle) * 3.8;
+          const spd = Math.min(dist * 0.1, 4.2);
+          p.vx = Math.cos(p.angle) * spd;
+          p.vy = Math.sin(p.angle) * spd;
+          p.x += p.vx;
+          p.y += p.vy;
         }
       }
-
-      p.x = Math.max(p.size, Math.min(width - p.size, p.x));
-      p.y = Math.max(p.size, Math.min(height - p.size, p.y));
+      p.x = Math.max(p.size * 0.6, Math.min(width - p.size * 0.6, p.x));
+      p.y = Math.max(p.size * 0.6, Math.min(height - p.size * 0.6, p.y));
     });
 
     // Update bullets
@@ -823,7 +1065,7 @@ class TanksMiniGame {
       b.x += b.vx;
       b.y += b.vy;
 
-      // Screen border ricochets
+      // Screen edge ricochets
       if (b.x < b.radius || b.x > width - b.radius) {
         b.vx *= -1;
         b.bounces--;
@@ -860,16 +1102,20 @@ class TanksMiniGame {
       if (d1 < this.p1.size * 0.6) {
         this.isRoundOver = true;
         sounds.playExplosion();
-        createShockwave(this.p1.x, this.p1.y, '#ff4b2b', 200);
-        createSparks(this.p1.x, this.p1.y, '#ff4b2b', 30, 8);
+        triggerHitStop(8);
+        sounds.vibrate([40, 70, 90]);
+        createShockwave(this.p1.x, this.p1.y, '#fda4af', 220);
+        createSparks(this.p1.x, this.p1.y, '#fda4af', 35, 9);
         onRoundWon(2, 'ПОПАДАНИЕ! ИГРОК 2 💥');
         break;
       }
       if (d2 < this.p2.size * 0.6) {
         this.isRoundOver = true;
         sounds.playExplosion();
-        createShockwave(this.p2.x, this.p2.y, '#00e5ff', 200);
-        createSparks(this.p2.x, this.p2.y, '#00e5ff', 30, 8);
+        triggerHitStop(8);
+        sounds.vibrate([40, 70, 90]);
+        createShockwave(this.p2.x, this.p2.y, '#38bdf8', 220);
+        createSparks(this.p2.x, this.p2.y, '#38bdf8', 35, 9);
         onRoundWon(1, 'ПОПАДАНИЕ! ИГРОК 1 💥');
         break;
       }
@@ -877,75 +1123,169 @@ class TanksMiniGame {
   }
 
   draw() {
-    // Obstacles
+    // Sci-fi obstacles with hazard diagonal lines
     ctx.save();
     this.obstacles.forEach(obs => {
-      ctx.fillStyle = '#161c2e';
+      ctx.fillStyle = '#181e2e';
       ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
       ctx.lineWidth = 2;
       ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+
+      // Warning hazard stripes inside
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 3;
+      for (let s = -obs.h; s < obs.w; s += 16) {
+        ctx.beginPath();
+        ctx.moveTo(obs.x + Math.max(0, s), obs.y);
+        ctx.lineTo(obs.x + Math.min(obs.w, s + obs.h), obs.y + obs.h);
+        ctx.stroke();
+      }
+
+      // Neon corner dots
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(obs.x + 2, obs.y + 2, 4, 4);
+      ctx.fillRect(obs.x + obs.w - 6, obs.y + 2, 4, 4);
+      ctx.fillRect(obs.x + 2, obs.y + obs.h - 6, 4, 4);
+      ctx.fillRect(obs.x + obs.w - 6, obs.y + obs.h - 6, 4, 4);
     });
     ctx.restore();
 
-    // Fire buttons
-    ctx.save();
-    // P1 Fire Button (bottom right)
-    ctx.beginPath();
-    ctx.arc(this.fireButtons.p1.x, this.fireButtons.p1.y, this.fireButtons.p1.r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(94, 234, 212, 0.18)';
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#5eead4';
-    ctx.stroke();
-    ctx.font = '22px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🔥', this.fireButtons.p1.x, this.fireButtons.p1.y);
+    // Crosshair Fire Buttons
+    const drawCrosshairBtn = (btn, color) => {
+      ctx.save();
+      // Outer translucent circle
+      ctx.beginPath();
+      ctx.arc(btn.x, btn.y, btn.r, 0, Math.PI * 2);
+      ctx.fillStyle = color === '#38bdf8' ? 'rgba(56, 189, 248, 0.14)' : 'rgba(253, 164, 175, 0.14)';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
 
-    // P2 Fire Button (top left - rotated)
-    ctx.beginPath();
-    ctx.arc(this.fireButtons.p2.x, this.fireButtons.p2.y, this.fireButtons.p2.r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(253, 164, 175, 0.18)';
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#fda4af';
-    ctx.stroke();
-    ctx.fillText('🔥', this.fireButtons.p2.x, this.fireButtons.p2.y);
-    ctx.restore();
+      // Inner target ring
+      ctx.beginPath();
+      ctx.arc(btn.x, btn.y, btn.r * 0.55, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
 
-    // Bullets
+      // Crosshair lines
+      ctx.beginPath();
+      ctx.moveTo(btn.x - btn.r * 0.75, btn.y);
+      ctx.lineTo(btn.x - btn.r * 0.25, btn.y);
+      ctx.moveTo(btn.x + btn.r * 0.25, btn.y);
+      ctx.lineTo(btn.x + btn.r * 0.75, btn.y);
+      ctx.moveTo(btn.x, btn.y - btn.r * 0.75);
+      ctx.lineTo(btn.x, btn.y - btn.r * 0.25);
+      ctx.moveTo(btn.x, btn.y + btn.r * 0.25);
+      ctx.lineTo(btn.x, btn.y + btn.r * 0.75);
+      ctx.stroke();
+
+      // Center laser dot
+      ctx.beginPath();
+      ctx.arc(btn.x, btn.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.restore();
+    };
+
+    drawCrosshairBtn(this.fireButtons.p1, '#38bdf8');
+    drawCrosshairBtn(this.fireButtons.p2, '#fda4af');
+
+    // Laser bullets with glowing energy trail
     this.bullets.forEach(b => {
       ctx.save();
+      const speed = Math.hypot(b.vx, b.vy);
+      const ang = Math.atan2(b.vy, b.vx);
+      ctx.translate(b.x, b.y);
+      ctx.rotate(ang);
+
+      // Trail
       ctx.beginPath();
-      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-      ctx.fillStyle = b.color;
+      ctx.moveTo(-16, 0);
+      ctx.lineTo(4, 0);
+      ctx.strokeStyle = b.color;
+      ctx.lineWidth = 3;
       ctx.shadowColor = b.color;
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+
+      // White core
+      ctx.beginPath();
+      ctx.arc(2, 0, b.radius * 0.75, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
       ctx.fill();
       ctx.restore();
     });
 
-    // Draw Tanks
+    // Draw Sci-Fi Tanks
     [this.p1, this.p2].forEach(p => {
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.angle);
 
-      // Tank Body
+      const sz = p.size;
+
+      // Tread shadow
+      ctx.beginPath();
+      ctx.rect(-sz * 0.52, -sz * 0.46, sz * 1.04, sz * 0.92);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.fill();
+
+      // Treads (left & right)
+      ctx.fillStyle = '#111622';
+      ctx.fillRect(-sz * 0.5, -sz * 0.44, sz, sz * 0.16);
+      ctx.fillRect(-sz * 0.5, sz * 0.28, sz, sz * 0.16);
+
+      // Tread notches
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      for (let tx = -sz * 0.4; tx <= sz * 0.4; tx += sz * 0.18) {
+        ctx.fillRect(tx, -sz * 0.44, 2, sz * 0.16);
+        ctx.fillRect(tx, sz * 0.28, 2, sz * 0.16);
+      }
+
+      // Armored Hull
+      ctx.fillStyle = '#1e2538';
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-sz * 0.42, -sz * 0.32, sz * 0.84, sz * 0.64, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // Armor plate accent
       ctx.fillStyle = p.color;
+      ctx.fillRect(-sz * 0.35, -sz * 0.26, sz * 0.7, 3);
+      ctx.fillRect(-sz * 0.35, sz * 0.23, sz * 0.7, 3);
+
+      // Cannon Barrel
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(0, -sz * 0.08, sz * 0.68, sz * 0.16);
+      // Muzzle brake
+      ctx.fillStyle = p.color;
+      ctx.fillRect(sz * 0.58, -sz * 0.11, sz * 0.12, sz * 0.22);
+
+      // Turret Dome
+      ctx.beginPath();
+      ctx.arc(0, 0, sz * 0.26, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f172a';
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = 14;
-      ctx.fillRect(-p.size * 0.45, -p.size * 0.35, p.size * 0.9, p.size * 0.7);
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
 
-      // Tracks
-      ctx.fillStyle = '#0e1320';
-      ctx.fillRect(-p.size * 0.5, -p.size * 0.45, p.size, p.size * 0.15);
-      ctx.fillRect(-p.size * 0.5, p.size * 0.3, p.size, p.size * 0.15);
-
-      // Barrel
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, -p.size * 0.1, p.size * 0.65, p.size * 0.2);
+      // Turret center light
+      ctx.beginPath();
+      ctx.arc(0, 0, sz * 0.11, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
 
       ctx.restore();
     });
@@ -1034,22 +1374,94 @@ class TapMiniGame {
   }
 
   draw() {
-    // Fill halves based on state with soft translucent colors
-    if (this.state === 'WAITING') {
-      ctx.fillStyle = 'rgba(244, 63, 94, 0.08)';
-      ctx.fillRect(0, 0, width, height);
-    } else if (this.state === 'READY') {
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.16)';
-      ctx.fillRect(0, 0, width, height);
-    }
+    const cx = width / 2;
+    const cy = height / 2;
 
-    // Huge center reaction symbol
-    ctx.save();
-    ctx.font = `${Math.min(width, height) * 0.28}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(this.state === 'READY' ? '⚡' : '🛑', width / 2, height / 2);
-    ctx.restore();
+    if (this.state === 'WAITING') {
+      // Soft crimson danger glow
+      const rGrad = ctx.createRadialGradient(cx, cy, 20, cx, cy, Math.min(width, height) * 0.5);
+      rGrad.addColorStop(0, 'rgba(239, 68, 68, 0.16)');
+      rGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = rGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Warning Reactor Core
+      ctx.save();
+      const time = performance.now() * 0.003;
+      const pulse = 1 + 0.06 * Math.sin(time * 3);
+
+      // Outer hazard ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, 54 * pulse, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 16;
+      ctx.stroke();
+
+      // Dashed inner barrier ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, 42 * pulse, 0, Math.PI * 2);
+      ctx.setLineDash([8, 6]);
+      ctx.strokeStyle = 'rgba(254, 202, 202, 0.6)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Inner glowing core
+      const coreGrad = ctx.createRadialGradient(cx - 6, cy - 6, 4, cx, cy, 28);
+      coreGrad.addColorStop(0, '#fca5a5');
+      coreGrad.addColorStop(0.6, '#ef4444');
+      coreGrad.addColorStop(1, '#7f1d1d');
+      ctx.beginPath();
+      ctx.arc(cx, cy, 28 * pulse, 0, Math.PI * 2);
+      ctx.fillStyle = coreGrad;
+      ctx.fill();
+
+      // Hand / Palm stop icon (vector)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - 10, cy - 10, 20, 20);
+
+      ctx.restore();
+    } else if (this.state === 'READY') {
+      // Emerald / Cyan High Voltage Flash
+      const gGrad = ctx.createRadialGradient(cx, cy, 20, cx, cy, Math.min(width, height) * 0.6);
+      gGrad.addColorStop(0, 'rgba(52, 211, 153, 0.35)');
+      gGrad.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
+      ctx.fillStyle = gGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Electric shockwave rings
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, 68, 0, Math.PI * 2);
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#4ade80';
+      ctx.shadowBlur = 24;
+      ctx.stroke();
+
+      // Procedural Vector Lightning Bolt
+      ctx.translate(cx, cy);
+      ctx.scale(1.8, 1.8);
+      ctx.beginPath();
+      ctx.moveTo(3, -24);
+      ctx.lineTo(-14, 0);
+      ctx.lineTo(-2, 0);
+      ctx.lineTo(-6, 24);
+      ctx.lineTo(14, -2);
+      ctx.lineTo(2, -2);
+      ctx.closePath();
+
+      ctx.fillStyle = '#fef08a';
+      ctx.shadowColor = '#22c55e';
+      ctx.shadowBlur = 20;
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 }
 
@@ -1275,26 +1687,41 @@ class DobbleMiniGame {
         ctx.textBaseline = 'middle';
         ctx.fillText(c.symbol, 0, 0);
       } else {
-        // FACE DOWN (Card Back)
-        ctx.fillStyle = '#242938';
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+        // FACE DOWN (Premium Holographic Card Back)
+        const bgGrad = ctx.createLinearGradient(-c.w / 2, -c.h / 2, c.w / 2, c.h / 2);
+        bgGrad.addColorStop(0, '#1e2436');
+        bgGrad.addColorStop(1, '#0f1320');
+        ctx.fillStyle = bgGrad;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.roundRect(-c.w / 2, -c.h / 2, c.w, c.h, 10);
         ctx.fill();
         ctx.stroke();
 
-        // Card back pattern
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
-        ctx.beginPath();
-        ctx.arc(0, 0, Math.min(c.w, c.h) * 0.25, 0, Math.PI * 2);
-        ctx.fill();
+        // Inner geometric border
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.25)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-c.w / 2 + 5, -c.h / 2 + 5, c.w - 10, c.h - 10);
 
-        ctx.font = `${Math.floor(c.w * 0.3)}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-        ctx.fillText('❓', 0, 0);
+        // Center holographic diamond star
+        ctx.beginPath();
+        ctx.moveTo(0, -c.h * 0.22);
+        ctx.lineTo(c.w * 0.22, 0);
+        ctx.lineTo(0, c.h * 0.22);
+        ctx.lineTo(-c.w * 0.22, 0);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.35)';
+        ctx.fill();
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Central diamond core dot
+        ctx.beginPath();
+        ctx.arc(0, 0, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
       }
 
       ctx.restore();
@@ -1406,30 +1833,70 @@ class TugMiniGame {
     ctx.strokeRect(width / 2 - 50, centerY + height * 0.35, 100, 4);
     ctx.strokeRect(width / 2 - 50, centerY - height * 0.35, 100, 4);
 
-    // Center Flag / Knot
+    // Center Energy Battle Ring & Knot
     const flagY = centerY + ropeOffset;
+    const activeColor = this.ropePosition > 0 ? '#38bdf8' : (this.ropePosition < 0 ? '#fda4af' : '#fbbf24');
+
+    // Glowing tension aura
     ctx.beginPath();
-    ctx.arc(width / 2, flagY, 26, 0, Math.PI * 2);
-    ctx.fillStyle = '#f8fafc';
+    ctx.arc(width / 2, flagY, 28, 0, Math.PI * 2);
+    ctx.fillStyle = activeColor;
+    ctx.shadowColor = activeColor;
+    ctx.shadowBlur = 18;
     ctx.fill();
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = this.ropePosition > 0 ? '#5eead4' : '#fda4af';
-    ctx.stroke();
+    ctx.shadowBlur = 0;
 
-    ctx.font = '24px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🚩', width / 2, flagY);
+    // Dark core
+    ctx.beginPath();
+    ctx.arc(width / 2, flagY, 20, 0, Math.PI * 2);
+    ctx.fillStyle = '#151a26';
+    ctx.fill();
 
-    // Tap hints
-    ctx.font = 'bold 15px sans-serif';
-    ctx.fillStyle = '#5eead4';
-    ctx.fillText('ТАПАЙ СЮДА! ⚡', width / 2, height * 0.85);
+    // Directional Tension Arrow Indicator
+    ctx.beginPath();
+    if (this.ropePosition > 0) {
+      // Pulling down (P1)
+      ctx.moveTo(width / 2 - 8, flagY - 6);
+      ctx.lineTo(width / 2 + 8, flagY - 6);
+      ctx.lineTo(width / 2, flagY + 8);
+    } else if (this.ropePosition < 0) {
+      // Pulling up (P2)
+      ctx.moveTo(width / 2 - 8, flagY + 6);
+      ctx.lineTo(width / 2 + 8, flagY + 6);
+      ctx.lineTo(width / 2, flagY - 8);
+    } else {
+      // Equilibrium pulse
+      ctx.arc(width / 2, flagY, 6, 0, Math.PI * 2);
+    }
+    ctx.fillStyle = activeColor;
+    ctx.fill();
+
+    // Tap Ripple Pads
+    const drawTapPad = (padY, color, label) => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(width / 2 - 75, padY - 20, 150, 40, 20);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = '800 12.5px Outfit, sans-serif';
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, width / 2, padY);
+      ctx.restore();
+    };
+
+    drawTapPad(height * 0.86, '#38bdf8', '⚡ ТАПАЙ БЫСТРЕЕ');
     ctx.save();
-    ctx.translate(width / 2, height * 0.15);
+    ctx.translate(width, height);
     ctx.rotate(Math.PI);
-    ctx.fillStyle = '#fda4af';
-    ctx.fillText('ТАПАЙ СЮДА! ⚡', 0, 0);
+    drawTapPad(height * 0.86, '#fda4af', '⚡ ТАПАЙ БЫСТРЕЕ');
     ctx.restore();
 
     ctx.restore();
@@ -1455,18 +1922,17 @@ class PongMiniGame {
   }
 
   initPaddles() {
-    this.p1 = { x: width / 2, y: height - 30, targetX: width / 2, vx: 0, color: '#5eead4', touchId: null };
-    this.p2 = { x: width / 2, y: 30, targetX: width / 2, vx: 0, color: '#fda4af', touchId: null };
-
-    const dir = Math.random() > 0.5 ? 1 : -1;
+    this.p1 = { x: width / 2, y: height - 42, targetX: width / 2, color: '#38bdf8', touchId: null, vx: 0 };
+    this.p2 = { x: width / 2, y: 42, targetX: width / 2, color: '#fda4af', touchId: null, vx: 0 };
     this.ball = {
       x: width / 2,
       y: height / 2,
       vx: (Math.random() - 0.5) * 4,
-      vy: dir * 6,
-      speed: 6.5,
-      r: 10
+      vy: (Math.random() > 0.5 ? 1 : -1) * 6,
+      r: 10,
+      speed: 6
     };
+    this.trail = [];
   }
 
   resetRound() {
@@ -1537,6 +2003,9 @@ class PongMiniGame {
     });
 
     const b = this.ball;
+    this.trail.unshift({ x: b.x, y: b.y });
+    if (this.trail.length > 8) this.trail.pop();
+
     b.x += b.vx;
     b.y += b.vy;
 
@@ -1545,22 +2014,26 @@ class PongMiniGame {
       b.x = b.r;
       b.vx = Math.abs(b.vx);
       sounds.playRicochet();
+      sounds.vibrate([10]);
     } else if (b.x > width - b.r) {
       b.x = width - b.r;
       b.vx = -Math.abs(b.vx);
       sounds.playRicochet();
+      sounds.vibrate([10]);
     }
 
     // Paddle 1 (Bottom) collision
     if (b.y + b.r >= this.p1.y - this.paddleH / 2 && b.y - b.r <= this.p1.y + this.paddleH / 2) {
       if (b.x >= this.p1.x - this.paddleW / 2 - b.r && b.x <= this.p1.x + this.paddleW / 2 + b.r) {
         b.y = this.p1.y - this.paddleH / 2 - b.r;
-        b.speed = Math.min(13, b.speed + 0.3);
+        b.speed = Math.min(13.5, b.speed + 0.35);
         const hitOffset = (b.x - this.p1.x) / (this.paddleW / 2); // -1 to 1
-        b.vx = hitOffset * 7 + this.p1.vx * 0.3;
+        b.vx = hitOffset * 7.5 + this.p1.vx * 0.3;
         b.vy = -b.speed;
-        sounds.playHit(1);
-        createSparks(b.x, b.y, this.p1.color, 8, 4);
+        sounds.playHit(1.2);
+        sounds.vibrate([18]);
+        createSparks(b.x, b.y, this.p1.color, 12, 5);
+        addScreenShake(4);
       }
     }
 
@@ -1568,12 +2041,14 @@ class PongMiniGame {
     if (b.y - b.r <= this.p2.y + this.paddleH / 2 && b.y + b.r >= this.p2.y - this.paddleH / 2) {
       if (b.x >= this.p2.x - this.paddleW / 2 - b.r && b.x <= this.p2.x + this.paddleW / 2 + b.r) {
         b.y = this.p2.y + this.paddleH / 2 + b.r;
-        b.speed = Math.min(13, b.speed + 0.3);
+        b.speed = Math.min(13.5, b.speed + 0.35);
         const hitOffset = (b.x - this.p2.x) / (this.paddleW / 2);
-        b.vx = hitOffset * 7 + this.p2.vx * 0.3;
+        b.vx = hitOffset * 7.5 + this.p2.vx * 0.3;
         b.vy = b.speed;
-        sounds.playHit(1);
-        createSparks(b.x, b.y, this.p2.color, 8, 4);
+        sounds.playHit(1.2);
+        sounds.vibrate([18]);
+        createSparks(b.x, b.y, this.p2.color, 12, 5);
+        addScreenShake(4);
       }
     }
 
@@ -1581,12 +2056,16 @@ class PongMiniGame {
     if (b.y < -10) {
       this.isRoundOver = true;
       sounds.playGoal();
-      createShockwave(b.x, 20, '#38bdf8', 200);
+      sounds.vibrate([40, 70, 90]);
+      triggerHitStop(8);
+      createShockwave(b.x, 20, '#38bdf8', 240);
       onRoundWon(1, 'ГОЛ! ИГРОК 1 🏓🔥');
     } else if (b.y > height + 10) {
       this.isRoundOver = true;
       sounds.playGoal();
-      createShockwave(b.x, height - 20, '#fb7185', 200);
+      sounds.vibrate([40, 70, 90]);
+      triggerHitStop(8);
+      createShockwave(b.x, height - 20, '#fda4af', 240);
       onRoundWon(2, 'ГОЛ! ИГРОК 2 🏓🔥');
     }
   }
@@ -1595,7 +2074,7 @@ class PongMiniGame {
     // Pitch net
     ctx.save();
     ctx.setLineDash([8, 8]);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, height / 2);
@@ -1603,23 +2082,43 @@ class PongMiniGame {
     ctx.stroke();
     ctx.restore();
 
+    // Ball motion trail
+    for (let i = 0; i < this.trail.length; i++) {
+      const t = this.trail[i];
+      const r = this.ball.r * (1 - i / this.trail.length) * 0.75;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(56, 189, 248, ${(0.35 * (1 - i / this.trail.length)).toFixed(2)})`;
+      ctx.fill();
+    }
+
     // Paddles
     [this.p1, this.p2].forEach(p => {
       ctx.save();
-      ctx.fillStyle = p.color;
+      // Outer capsule with glow
       ctx.beginPath();
       ctx.roundRect(p.x - this.paddleW / 2, p.y - this.paddleH / 2, this.paddleW, this.paddleH, 7);
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 16;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Inner grip core
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(p.x - this.paddleW * 0.4, p.y - this.paddleH * 0.25, this.paddleW * 0.8, this.paddleH * 0.5, 3);
       ctx.fill();
       ctx.restore();
     });
 
-    // Ball
+    // Glowing Neon Ball
     ctx.save();
     ctx.beginPath();
     ctx.arc(this.ball.x, this.ball.y, this.ball.r, 0, Math.PI * 2);
-    ctx.fillStyle = '#f8fafc';
-    ctx.shadowColor = '#fff';
-    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 16;
     ctx.fill();
     ctx.restore();
   }
@@ -1704,37 +2203,119 @@ class CowboyMiniGame {
   update() {}
 
   draw() {
-    // Cowboy standoff visuals
-    ctx.save();
+    // Draw procedural Cowboy duelist
+    const drawCowboy = (color) => {
+      ctx.save();
+      // Hat shadow
+      ctx.beginPath();
+      ctx.ellipse(0, 16, 38, 14, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.fill();
+
+      // Shoulders / Poncho
+      ctx.beginPath();
+      ctx.moveTo(-36, 36);
+      ctx.lineTo(36, 36);
+      ctx.lineTo(26, 12);
+      ctx.lineTo(-26, 12);
+      ctx.closePath();
+      ctx.fillStyle = '#1e2436';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.fill();
+      ctx.stroke();
+
+      // Bandana
+      ctx.beginPath();
+      ctx.moveTo(-16, 14);
+      ctx.lineTo(16, 14);
+      ctx.lineTo(0, 26);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      // Face silhouette
+      ctx.beginPath();
+      ctx.arc(0, 2, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f1422';
+      ctx.fill();
+
+      // Stetson Hat Crown
+      ctx.beginPath();
+      ctx.roundRect(-18, -24, 36, 26, [8, 8, 2, 2]);
+      ctx.fillStyle = '#78350f';
+      ctx.fill();
+
+      // Hat Band
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(-18, -3, 36, 5);
+
+      // Curved Hat Brim
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 44, 11, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#92400e';
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 2;
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.restore();
+    };
+
     // P2 Cowboy Top
-    ctx.translate(width / 2, height * 0.25);
+    ctx.save();
+    ctx.translate(width / 2, height * 0.28);
     ctx.rotate(Math.PI);
-    ctx.font = '64px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🤠', 0, 0);
+    drawCowboy('#fda4af');
     ctx.restore();
 
     // P1 Cowboy Bottom
     ctx.save();
-    ctx.translate(width / 2, height * 0.75);
-    ctx.font = '64px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🤠', 0, 0);
+    ctx.translate(width / 2, height * 0.72);
+    drawCowboy('#38bdf8');
     ctx.restore();
 
-    // Holster buttons
-    ctx.save();
-    ctx.font = '16px sans-serif';
-    ctx.fillStyle = '#5eead4';
-    ctx.textAlign = 'center';
-    ctx.fillText('🔫 ЖМИ СЮДА', width / 2, height * 0.9);
+    // Dueling Laser Sight when BANG triggers
+    if (this.state === 'BANG') {
+      ctx.save();
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 12;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(width / 2, height * 0.32);
+      ctx.lineTo(width / 2, height * 0.68);
+      ctx.stroke();
+      ctx.restore();
+    }
 
-    ctx.translate(width / 2, height * 0.1);
+    // High-noon Duelist Trigger Buttons
+    const drawTriggerBtn = (y, color, text) => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(width / 2 - 80, y - 22, 160, 44, 22);
+      ctx.fillStyle = 'rgba(24, 30, 46, 0.85)';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 12;
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = '800 13px Outfit, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, width / 2, y);
+      ctx.restore();
+    };
+
+    drawTriggerBtn(height * 0.9, '#38bdf8', this.state === 'BANG' ? '🔥 ВЫСТРЕЛ!' : '🖐️ КОБУРА');
+    ctx.save();
+    ctx.translate(width, height);
     ctx.rotate(Math.PI);
-    ctx.fillStyle = '#fda4af';
-    ctx.fillText('🔫 ЖМИ СЮДА', 0, 0);
+    drawTriggerBtn(height * 0.9, '#fda4af', this.state === 'BANG' ? '🔥 ВЫСТРЕЛ!' : '🖐️ КОБУРА');
     ctx.restore();
   }
 }
@@ -1853,30 +2434,109 @@ class KnifeMiniGame {
   draw() {
     const centerY = height / 2;
 
-    // Draw central spinning log
+    // Helper to draw a detailed procedural Kunai Knife
+    const drawKnifeShape = (color) => {
+      // Blade
+      ctx.beginPath();
+      ctx.moveTo(0, -18);
+      ctx.lineTo(5, -2);
+      ctx.lineTo(4, 8);
+      ctx.lineTo(-4, 8);
+      ctx.lineTo(-5, -2);
+      ctx.closePath();
+      ctx.fillStyle = '#e2e8f0';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+      ctx.shadowBlur = 4;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Blade center ridge
+      ctx.beginPath();
+      ctx.moveTo(0, -17);
+      ctx.lineTo(0, 8);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Crossguard
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(-7, 8, 14, 3);
+
+      // Wrapped Handle
+      ctx.fillStyle = color;
+      ctx.fillRect(-3.5, 11, 7, 14);
+
+      // Handle wraps
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-3.5, 15); ctx.lineTo(3.5, 15);
+      ctx.moveTo(-3.5, 19); ctx.lineTo(3.5, 19);
+      ctx.moveTo(-3.5, 23); ctx.lineTo(3.5, 23);
+      ctx.stroke();
+
+      // Pommel Ring
+      ctx.beginPath();
+      ctx.arc(0, 27, 4, 0, Math.PI * 2);
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    };
+
+    // Draw central spinning wooden target log
     ctx.save();
     ctx.translate(width / 2, centerY);
     ctx.rotate(this.targetAngle);
 
+    // Target shadow
+    ctx.beginPath();
+    ctx.arc(4, 6, this.targetRadius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.fill();
+
+    // Outer bark rim
     ctx.beginPath();
     ctx.arc(0, 0, this.targetRadius, 0, Math.PI * 2);
-    ctx.fillStyle = '#261c14';
+    ctx.fillStyle = '#3f2212';
     ctx.fill();
     ctx.lineWidth = 6;
-    ctx.strokeStyle = '#78350f';
+    ctx.strokeStyle = '#271406';
     ctx.stroke();
 
-    ctx.font = `${Math.floor(this.targetRadius * 0.7)}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🎯', 0, 0);
+    // Metal band with rivets
+    ctx.beginPath();
+    ctx.arc(0, 0, this.targetRadius - 4, 0, Math.PI * 2);
+    ctx.strokeStyle = '#78350f';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Concentric wood growth rings
+    [0.82, 0.62, 0.42, 0.24].forEach((scale, idx) => {
+      ctx.beginPath();
+      ctx.arc(0, 0, this.targetRadius * scale, 0, Math.PI * 2);
+      ctx.fillStyle = idx % 2 === 0 ? '#92400e' : '#78350f';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+
+    // Central Bullseye
+    ctx.beginPath();
+    ctx.arc(0, 0, this.targetRadius * 0.16, 0, Math.PI * 2);
+    ctx.fillStyle = '#dc2626';
+    ctx.fill();
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     // Draw stuck knives
     this.knives.forEach(k => {
       ctx.save();
       ctx.rotate(k.angle);
-      ctx.fillStyle = k.owner === 1 ? '#5eead4' : '#fda4af';
-      ctx.fillRect(this.targetRadius - 10, -5, 34, 10);
+      ctx.translate(this.targetRadius + 12, 0);
+      ctx.rotate(Math.PI / 2);
+      drawKnifeShape(k.owner === 1 ? '#38bdf8' : '#fda4af');
       ctx.restore();
     });
 
@@ -1885,8 +2545,9 @@ class KnifeMiniGame {
     // Draw flying knives
     this.flyingKnives.forEach(fk => {
       ctx.save();
-      ctx.fillStyle = fk.owner === 1 ? '#5eead4' : '#fda4af';
-      ctx.fillRect(fk.x - 5, fk.y - 15, 10, 30);
+      ctx.translate(fk.x, fk.y);
+      if (fk.vy > 0) ctx.rotate(Math.PI);
+      drawKnifeShape(fk.owner === 1 ? '#38bdf8' : '#fda4af');
       ctx.restore();
     });
   }
@@ -2007,11 +2668,33 @@ class SnakeMiniGame {
   }
 
   draw() {
+    // Tap Guide Indicators on each half
+    ctx.save();
+    ctx.font = '700 12px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.fillText('◀ ВЛЕВО', width * 0.25, height * 0.82);
+    ctx.fillText('ВПРАВО ▶', width * 0.75, height * 0.82);
+
+    ctx.save();
+    ctx.translate(width, height);
+    ctx.rotate(Math.PI);
+    ctx.fillText('◀ ВЛЕВО', width * 0.25, height * 0.82);
+    ctx.fillText('ВПРАВО ▶', width * 0.75, height * 0.82);
+    ctx.restore();
+    ctx.restore();
+
+    // Tron Light Ribbons
     [this.p1, this.p2].forEach(s => {
       ctx.save();
+      // Outer neon bloom
       ctx.strokeStyle = s.color;
-      ctx.lineWidth = 6;
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 16;
+      ctx.lineWidth = 7;
       ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
       ctx.beginPath();
       s.trail.forEach((pt, idx) => {
         if (idx === 0) ctx.moveTo(pt.x, pt.y);
@@ -2020,11 +2703,33 @@ class SnakeMiniGame {
       ctx.lineTo(s.x, s.y);
       ctx.stroke();
 
-      // Head
-      ctx.fillStyle = '#f8fafc';
+      // Inner intense core
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Head / Light-cycle cockpit
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      const ang = Math.atan2(s.dir.y, s.dir.x);
+      ctx.rotate(ang);
+
+      // Cockpit body
       ctx.beginPath();
-      ctx.arc(s.x, s.y, 8, 0, Math.PI * 2);
+      ctx.roundRect(-8, -6, 16, 12, 4);
+      ctx.fillStyle = s.color;
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 14;
       ctx.fill();
+
+      // Windshield
+      ctx.beginPath();
+      ctx.arc(2, 0, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+
+      ctx.restore();
       ctx.restore();
     });
   }
@@ -2127,9 +2832,12 @@ class BombMiniGame {
     if (this.timeLeft <= 0) {
       this.isRoundOver = true;
       sounds.playExplosion();
-      addScreenShake(20);
-      createShockwave(b.x, b.y, '#f87171', 280);
-      createSparks(b.x, b.y, '#fbbf24', 40, 10);
+      sounds.vibrate([60, 100, 120]);
+      triggerHitStop(10);
+      addScreenShake(24);
+      createShockwave(b.x, b.y, '#f87171', 300);
+      createSparks(b.x, b.y, '#fbbf24', 45, 11);
+      createConfetti(b.x, b.y, 60);
 
       // Loser is whoever has the bomb on their half!
       const loser = b.y > height / 2 ? 1 : 2;
@@ -2139,26 +2847,76 @@ class BombMiniGame {
   }
 
   draw() {
-    // Bomb pulse
     const b = this.bomb;
+    const isPanic = this.timeLeft < 2.5;
+    const pulseScale = isPanic ? (1 + 0.08 * Math.sin(performance.now() * 0.025)) : 1;
+
     ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.scale(pulseScale, pulseScale);
+
+    // Floor shadow
     ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-    ctx.fillStyle = '#1e2436';
+    ctx.ellipse(3, b.r + 4, b.r * 0.85, b.r * 0.35, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
     ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = this.timeLeft < 2 ? '#ef4444' : '#f59e0b';
+
+    // Fuse Rope & Collar
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(-6, -b.r - 8, 12, 8);
+
+    ctx.beginPath();
+    ctx.moveTo(0, -b.r - 8);
+    ctx.quadraticCurveTo(8, -b.r - 20, 16, -b.r - 16);
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 3.5;
     ctx.stroke();
 
-    ctx.font = '28px sans-serif';
+    // Burning Sizzle Spark on Fuse Tip
+    const tipX = 16;
+    const tipY = -b.r - 16;
+    ctx.beginPath();
+    ctx.arc(tipX, tipY, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fef08a';
+    ctx.shadowColor = '#f97316';
+    ctx.shadowBlur = 12;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 3D Metallic Bomb Body
+    const bGrad = ctx.createRadialGradient(-b.r * 0.35, -b.r * 0.35, b.r * 0.1, 0, 0, b.r);
+    if (isPanic) {
+      bGrad.addColorStop(0, '#fca5a5');
+      bGrad.addColorStop(0.6, '#ef4444');
+      bGrad.addColorStop(1, '#450a0a');
+    } else {
+      bGrad.addColorStop(0, '#64748b');
+      bGrad.addColorStop(0.5, '#1e293b');
+      bGrad.addColorStop(1, '#020617');
+    }
+
+    ctx.beginPath();
+    ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = bGrad;
+    ctx.shadowColor = isPanic ? 'rgba(239, 68, 68, 0.6)' : 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = isPanic ? 22 : 12;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Skull / Hazard symbol on bomb center
+    ctx.fillStyle = isPanic ? '#ffffff' : 'rgba(255, 255, 255, 0.45)';
+    ctx.beginPath();
+    ctx.arc(0, -2, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-5, 4, 10, 4);
+
+    // Timer display badge
+    ctx.font = '800 15px Outfit, sans-serif';
+    ctx.fillStyle = isPanic ? '#f87171' : '#f8fafc';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('💣', b.x, b.y);
+    ctx.fillText(`${Math.max(0, this.timeLeft).toFixed(1)}s`, 0, -b.r - 28);
 
-    // Timer display
-    ctx.font = 'bold 20px sans-serif';
-    ctx.fillStyle = this.timeLeft < 2 ? '#ef4444' : '#fff';
-    ctx.fillText(`${Math.max(0, this.timeLeft).toFixed(1)}s`, b.x, b.y - 36);
     ctx.restore();
 
     // Players
@@ -2168,8 +2926,20 @@ class BombMiniGame {
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fillStyle = p.color;
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = 15;
+      ctx.shadowBlur = 18;
       ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * 0.72, 0, Math.PI * 2);
+      ctx.fillStyle = '#111624';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * 0.4, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+
       ctx.restore();
     });
   }
@@ -2221,6 +2991,58 @@ function loadMiniGame(gameId) {
   }
 }
 
+// Ambient floating dust / stars in Menu background
+const menuParticles = Array.from({ length: 32 }, () => ({
+  x: Math.random() * (window.innerWidth || 400),
+  y: Math.random() * (window.innerHeight || 800),
+  r: Math.random() * 2.5 + 0.8,
+  speed: Math.random() * 0.45 + 0.2,
+  sway: Math.random() * Math.PI * 2,
+  swaySpeed: Math.random() * 0.02 + 0.01,
+  color: Math.random() > 0.5 ? 'rgba(56, 189, 248,' : 'rgba(253, 164, 175,'
+}));
+
+function updateAndDrawMenuBackground() {
+  ctx.fillStyle = '#0a0d16';
+  ctx.fillRect(0, 0, width, height);
+
+  // Soft cyber grid overlay
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+  ctx.lineWidth = 1;
+  const step = 44;
+  for (let x = 0; x < width; x += step) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+    ctx.stroke();
+  }
+  for (let y = 0; y < height; y += step) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
+
+  // Floating glowing particles
+  for (let p of menuParticles) {
+    p.y -= p.speed;
+    p.sway += p.swaySpeed;
+    p.x += Math.sin(p.sway) * 0.35;
+    if (p.y < -10) {
+      p.y = height + 10;
+      p.x = Math.random() * width;
+    }
+    const alpha = (0.25 + 0.18 * Math.sin(p.sway * 1.5)).toFixed(2);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = p.color + alpha + ')';
+    ctx.shadowColor = p.color + '0.6)';
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
 function masterLoop() {
   // Screen shake
   let sx = 0, sy = 0;
@@ -2236,13 +3058,16 @@ function masterLoop() {
   ctx.translate(sx, sy);
 
   if (currentMiniGame) {
-    currentMiniGame.update();
+    drawArenaBackground();
+    if (hitStopFrames > 0) {
+      hitStopFrames--;
+    } else {
+      currentMiniGame.update();
+    }
     currentMiniGame.draw();
     updateAndDrawEffects();
   } else {
-    // Menu background subtle animation
-    ctx.fillStyle = '#080a10';
-    ctx.fillRect(0, 0, width, height);
+    updateAndDrawMenuBackground();
   }
 
   ctx.restore();
