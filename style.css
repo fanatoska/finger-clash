@@ -5,7 +5,6 @@
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-  touch-action: none;
 }
 
 :root {
@@ -65,6 +64,7 @@ body, html {
   width: 100%;
   height: 100%;
   display: block;
+  touch-action: none;
 }
 
 /* Center Dividing Line */
@@ -230,10 +230,37 @@ body, html {
   z-index: 100;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 24px 20px;
+  justify-content: flex-start;
+  padding: max(12px, env(safe-area-inset-top)) 12px max(24px, env(safe-area-inset-bottom)) 12px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
   transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.menu-overlay * {
+  touch-action: pan-y;
+}
+
+button,
+.game-card,
+.round-chip {
+  touch-action: manipulation;
+}
+
+/* Custom sleek scrollbar */
+.menu-overlay::-webkit-scrollbar {
+  width: 5px;
+}
+
+.menu-overlay::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.menu-overlay::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
 }
 
 .menu-overlay.hidden {
@@ -244,34 +271,35 @@ body, html {
 
 .menu-header {
   text-align: center;
-  margin-top: 6px;
-  margin-bottom: 14px;
+  margin-top: 2px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .hub-logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .hub-icon {
-  font-size: 26px;
+  font-size: 22px;
 }
 
 .hub-title {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 900;
   letter-spacing: 2px;
   color: #f8fafc;
 }
 
 .hub-subtitle {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
-  letter-spacing: 0.8px;
-  margin-top: 4px;
+  letter-spacing: 0.6px;
+  margin-top: 2px;
 }
 
 /* Rounds selector */
@@ -279,27 +307,28 @@ body, html {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   background: var(--bg-surface);
-  padding: 8px 16px;
+  padding: 6px 14px;
   border-radius: 20px;
   border: 1px solid var(--border-subtle);
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   max-width: 320px;
   margin-left: auto;
   margin-right: auto;
   width: 100%;
+  flex-shrink: 0;
 }
 
 .selector-label {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--text-muted);
 }
 
 .rounds-options {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .round-chip {
@@ -307,10 +336,10 @@ body, html {
   border: 1px solid var(--border-subtle);
   color: var(--text-muted);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
-  padding: 5px 12px;
-  border-radius: 12px;
+  padding: 4px 10px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -321,30 +350,31 @@ body, html {
   color: #fff;
 }
 
-/* Games Grid */
+/* Games Grid - Responsive 2-column layout on phones */
 .games-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  max-width: 440px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 10px;
+  max-width: 520px;
   margin: 0 auto;
   width: 100%;
-  flex-grow: 1;
+  flex-shrink: 0;
 }
 
 .game-card {
   position: relative;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  padding: 15px 18px;
+  border-radius: 14px;
+  padding: 8px 10px;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 8px;
   cursor: pointer;
   overflow: hidden;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  min-height: 56px;
 }
 
 .game-card:hover {
@@ -353,7 +383,7 @@ body, html {
 }
 
 .game-card:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
   background: #333a4c;
 }
 
@@ -361,7 +391,7 @@ body, html {
   position: absolute;
   top: 0;
   left: 0;
-  width: 5px;
+  width: 4px;
   height: 100%;
   border-radius: 4px 0 0 4px;
 }
@@ -374,51 +404,55 @@ body, html {
 .glow-amber  { background: #fde047; }
 
 .card-emoji {
-  font-size: 28px;
+  font-size: 22px;
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.04);
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--border-subtle);
 }
 
 .card-info {
   flex-grow: 1;
+  min-width: 0;
 }
 
 .card-title {
-  font-size: 16px;
+  font-size: 12.5px;
   font-weight: 800;
   color: #f8fafc;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card-desc {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--text-muted);
-  line-height: 1.4;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .play-arrow {
-  color: #64748b;
-  font-size: 16px;
-  font-weight: 800;
-  transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.game-card:hover .play-arrow {
-  color: #cbd5e1;
-  transform: translateX(3px);
+  display: none;
 }
 
 .menu-footer {
-  margin-top: 14px;
+  margin-top: 10px;
+  margin-bottom: 6px;
   display: flex;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .btn-random {
@@ -426,9 +460,9 @@ body, html {
   border: 1px solid var(--border-focus);
   color: #e2e8f0;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
-  padding: 12px 24px;
+  padding: 10px 22px;
   border-radius: 20px;
   cursor: pointer;
   letter-spacing: 0.5px;
@@ -445,6 +479,48 @@ body, html {
 
 .btn-random:active {
   transform: scale(0.96);
+}
+
+/* Tablet & Desktop view */
+@media (min-width: 600px) {
+  .menu-overlay {
+    padding: 24px;
+  }
+  .games-grid {
+    gap: 12px;
+    max-width: 620px;
+  }
+  .game-card {
+    padding: 12px 14px;
+    min-height: 64px;
+    gap: 12px;
+  }
+  .card-emoji {
+    width: 44px;
+    height: 44px;
+    font-size: 24px;
+  }
+  .card-title {
+    font-size: 14.5px;
+  }
+  .card-desc {
+    font-size: 11.5px;
+  }
+  .play-arrow {
+    display: block;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 800;
+    flex-shrink: 0;
+    margin-left: auto;
+    opacity: 0.7;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+  .game-card:hover .play-arrow {
+    color: #cbd5e1;
+    transform: translateX(2px);
+    opacity: 1;
+  }
 }
 
 /* ==========================================================================
